@@ -1,10 +1,10 @@
 Package: bravo
 Type: Package
 Title: Bayesian Screening and Variable Selection
-Version: 2.0.0
+Version: 2.0.1
 Author: Dongjin Li [aut, cre], Somak Dutta [aut], Vivekananda Roy [ctb]
 Maintainer: Dongjin Li <dongjl@iastate.edu>
-Description: Performs Bayesian variable selection with embedded screening for ultra-high dimensional Gaussian linear regression models. The methodology is described in Li, Dutta and Roy (2020) <arXiv:2006.07561>.
+Description: Performs Bayesian variable screening and selection for ultra-high dimensional linear regression models.
 License: GPL-3
 Encoding: UTF-8
 Depends: R (>= 3.0.2), methods
@@ -12,6 +12,6 @@ Imports: Rcpp (>= 1.0.2), Matrix (>= 1.2-17)
 LinkingTo: Rcpp
 NeedsCompilation: yes
 RoxygenNote: 7.1.1
-Packaged: 2021-07-18 13:23:38 UTC; somakd
+Packaged: 2021-09-22 01:08:02 UTC; dongjl
 Repository: CRAN
-Date/Publication: 2021-07-20 04:50:09 UTC
+Date/Publication: 2021-09-22 04:30:11 UTC
