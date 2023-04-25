@@ -10,6 +10,7 @@
 #' @param pp Boolean: If \code{FALSE} (default) the algorithm stops after including \code{max.var} many variables.
 #' If true, the posterior probability stopping rule is used.
 #' @param max.var The maximum number of variables to be included.
+#' @param verbose If \code{TRUE} (default) will show the variable index included in each iteration.
 #' @return A list with components
 #' \item{model.pp}{An integer vector of the screened model.}
 #' \item{postprobs}{The sequence of posterior probabilities until the last included variable.}
@@ -30,7 +31,7 @@
 #' res$postprobs # the log (unnormalized) posterior probabilities corresponding to the model.pp.
 #' @export
 
-bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
+bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X), verbose = TRUE)
 {
   p = ncol(X)
   n = nrow(X)
@@ -74,25 +75,24 @@ bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
 
 
   postprob[1] = -0.5*(n-1)*log(yty) # The posterior probability of the null model
-  cat("\n Including: ")
-  # cat(postprob[1],", ")
+  if(verbose) cat("\n Including: ")
 
   # First variable
   b0 = sqrt(xtx + lam)
   logdetR = log(b0)
 
-  logp <- 0.5*log(lam)-logdetR - 0.5*(n-1)*log(yty - (xty/b0)^2) + logw
+  logp <- as.numeric(0.5*log(lam)-logdetR - 0.5*(n-1)*log(yty - (xty/b0)^2) + logw)
 
 
   j = which.max(logp)
-  cat(j)
+  if(verbose) cat(j)
   model[1] = j;
   postprob[2] = logp[j]
   if(postprob[2]<postprob[1] && pp){
-    cat(" Done.\n")
+    if(verbose) cat(" Done.\n")
     return(list(model.pp = NULL, postprobs=postprob[1],lam=lam))
   }
-  # cat(" ,",logp[j],"\n")
+
   # Need to do the second variable by hand
   if(max.var >= 2)
   {
@@ -110,18 +110,17 @@ bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
     RSS = yty - sumv2 - u^2
     RSS[j] = Inf
 
-    logp = 0.5*2*log(lam) - logdetR - log(w1) - 0.5*{n-1}*log(RSS) + 2*logw
+    logp = as.numeric(0.5*2*log(lam) - logdetR - log(w1) - 0.5*{n-1}*log(RSS) + 2*logw)
 
     j = which.max(logp)
-    cat(", ",j)
+    if(verbose) cat(", ",j)
     model[2] = j
     postprob[3] = logp[j]
     if(postprob[3]<postprob[2] && pp){
-      cat(" Done.\n")
+      if(verbose) cat(" Done.\n")
       return(list(model.pp = model[1:2], postprobs=postprob[1],lam=lam))
     }
 
-    # cat(" ,",logp[j],"\n")
   }
 
 
@@ -150,7 +149,7 @@ bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
 
 
       temp1 = D1*backsolve(R,a1,transpose = FALSE,k = ii-2)
-      temp2 = xjc - X1 %*% temp1;
+      temp2 = as.numeric(xjc - X1 %*% temp1);
       temp2 = temp2 - mean(temp2)
 
       eta = D*crossprod(X,temp2)
@@ -168,17 +167,15 @@ bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
       RSS = yty - sumv2 - u^2
       RSS[model[1:{ii-1}]] = Inf
 
-      logp = 0.5*ii*log(lam) - logdetR - log(w2) - 0.5*{n-1}*log(RSS) + ii*logw
+      logp = as.numeric(0.5*ii*log(lam) - logdetR - log(w2) - 0.5*{n-1}*log(RSS) + ii*logw)
 
-      # print(anyNA(logp))
       j = which.max(logp)
 
-      cat(", ",j)
-      # cat(" ,",logp[j],"\n")
+      if(verbose) cat(", ",j)
       postprob[ii+1] <- logp[j]
       model[ii] = j
       if(postprob[ii+1]<postprob[ii] && pp){
-        cat(" Done.\n")
+        if(verbose) cat(" Done.\n")
         return(list(model.pp = model[1:(ii-1)], postprobs=postprob[1:ii],lam=lam,w=w))
       }
 
@@ -187,79 +184,12 @@ bits <- function(X,y,lam=1, w=0.5, pp = FALSE,max.var = nrow(X))
       {
         R[1:{ii-2},ii-1] = a1;
         R[ii-1,ii-1] = b1;
-        # print(R[1:{ii-1},1:{ii-1}])
       }
 
     }
   }
-  cat(" Done.\n")
+  if(verbose) cat(" Done.\n")
 
-  return(list(model.pp = model, postprobs=postprob,lam=lam,w=w))
+  return(list(model.pp = model[1:ii], postprobs=postprob,lam=lam,w=w))
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# bits <- function(X,y,lam=nrow(X)/ncol(X)^2,w = sqrt(nrow(X))/ncol(X),criteria="PP")
-# {
-#   p = ncol(X)
-#   n = nrow(X)
-#   ys = scale(y)
-#
-#   xbar = colMeans(X)
-#
-#   stopifnot(class(X) %in% c("dgCMatrix","matrix"))
-#
-#   if(class(X) == "dgCMatrix") {
-#     D = 1/sqrt(colMSD_dgc(X,xbar))
-#   }  else   {
-#     D = apply(X,2,sd)
-#     D = 1/D
-#   }
-#   Xty = D*as.numeric(crossprod(X,ys))
-#
-#
-#   max.var = n; # Intially allocate for maximum of n variables.
-#
-#   model = integer(0L)
-#   postprob = numeric(max.var+1)
-#   R0 = NULL
-#   v0 = NULL
-#
-#   postprob[1] = -0.5*(n-1)*log(n) # The posterior probability of the null model
-#   cat("\n Including: ")
-#   for(ii in 1:n)
-#   {
-#     this <- addvar(model = model,x = X, ys = ys, xty = Xty, lam = lam, w = w,
-#                    R0 = R0, v0 = v0,D = D,xbar = xbar)
-#     j = this$which.max
-#     if(this$logp[j] < postprob[ii])      break;
-#     cat(j,", ",sep = "")
-#     postprob[ii+1] <- this$logp[j]
-#     model = c(model,j)
-#     R0 = this$R
-#     v0 = this$v
-#   }
-#   cat(" Done.\n")
-#
-#   return(list(model.pp = model, postprobs=postprob[1:ii]))
-# }
