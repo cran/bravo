@@ -1,4 +1,4 @@
-f6509659d387937b95542e11d7737f6e *DESCRIPTION
+2eb2aa32b44ed6adf3039afeda12bcef *DESCRIPTION
 d429ab10bebfe4cc8d43978166b11e52 *NAMESPACE
 3c1e73275c1de7fb62051f0b349e6be2 *R/RcppExports.R
 c4abbd5baea418f3887788f2121ee511 *R/addpara.R
@@ -9,9 +9,9 @@ c4abbd5baea418f3887788f2121ee511 *R/addpara.R
 ddce113cb4ce01d855410b01997027ac *R/predIntv.R
 7b5b23aae82dc28e8fae0574e7e70f8e *R/predPoint.R
 ad4ab30fb72793c85e9fddd24511c1e8 *R/predict.sven.R
-cd0234907fd6e0e39be6be2726852d3d *R/sven.R
-39082552c99dd4fdfb4eec3d4cff376d *R/sven.notemp.R
-b861adcc50438923cc16f836e400e7cd *R/sven.temp.R
+8246d887f757f2319fa027e837062433 *R/sven.R
+b742c9de6466dabebfbac7aa7b9f93ec *R/sven.notemp.R
+4336721cf28033856d5f0323560ec9c1 *R/sven.temp.R
 1e3f92aa9acbe0f5666d6045d229aa05 *R/swapvar.R
 d585338891c5920d964e6f7b9d02217b *README.md
 832df1f4cce54b0ba92d6f697dc7071a *man/bits.Rd
