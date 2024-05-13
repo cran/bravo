@@ -8,31 +8,35 @@ in Gaussian linear models (ultra-high, high or low dimensional).}
 sven(
   X,
   y,
-  w = sqrt(nrow(X))/ncol(X),
-  lam = nrow(X)/ncol(X)^2,
-  Ntemp = 3,
-  Tmax = (log(log(ncol(X))) + log(ncol(X))),
+  w = NULL,
+  lam = NULL,
+  Ntemp = 10,
+  Tmax = NULL,
   Miter = 50,
   wam.threshold = 0.5,
   log.eps = -16,
   L = 20,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
-\item{X}{The \eqn{n\times p} covariate matrix without intercept. The following classes are supported:
-\code{matrix} and \code{dgCMatrix}. Every care is taken not to make copies of this (typically)
-giant matrix. No need to center or scale this matrix manually. Scaling is performed implicitly and 
-regression coefficient are returned on the original scale.}
+\item{X}{The \eqn{n\times p} covariate matrix or list of two matrices without intercept. 
+The following classes are supported: \code{matrix} and \code{dgCMatrix}. Every care is taken not to make copies of these (typically)
+giant matrices. No need to center or scale these matrices manually. Scaling is performed implicitly and 
+regression coefficient are returned on the original scale. Typically, in a combined GWAS-TWAS type 
+analysis, \code{X[[1]]} should be a sparse matrix and \code{X[[2]]} should be a dense matrix.}
 
 \item{y}{The response vector of length \eqn{n}. No need to center or scale.}
 
-\item{w}{The prior inclusion probability of each variable. Default: \eqn{sqrt(n)/p}.}
+\item{w}{The prior inclusion probability of each variable. Default: NULL, whence it is set as
+\eqn{\sqrt{n}/p} if \eqn{X} is a matrix. Or \eqn{(\sqrt{n}/p_1,\sqrt{n}/p_2)} if $X$ is a list of 
+two matrices with \eqn{p_1} and \eqn{p_2} columns.}
 
-\item{lam}{The slab precision parameter. Default: \eqn{n/p^2}
-as suggested by the theory of Li et al. (2020).}
+\item{lam}{The slab precision parameter. Default: NULL, whence it is set as \eqn{n/p^2} for 
+as suggested by the theory of Li et al. (2023). Similarly, it's a vector of length two with values
+\eqn{\sqrt{n}/P_1^2} and \eqn{\sqrt{n}/p_2^2} when \code{X} is a list.}
 
-\item{Ntemp}{The number of temperatures. Default: 3.}
+\item{Ntemp}{The number of temperatures. Default: 10.}
 
 \item{Tmax}{The maximum temperature. Default: \eqn{\log\log p+\log p}.}
 
@@ -46,7 +50,7 @@ probability is greater than the threshold. Default: 0.5.}
 
 \item{L}{The minimum number of neighboring models screened. Default: 20.}
 
-\item{verbose}{If \code{TRUE}, the function prints the current temperature SVEN is at; the default is TRUE.}
+\item{verbose}{If \code{FALSE}, the function prints the current temperature SVEN is at; the default is TRUE.}
 }
 \value{
 A list with components
@@ -73,7 +77,7 @@ based screening and using fast Cholesky updates, SVEN produces a highly scalable
 algorithm to explore gigantic model spaces and rapidly identify the regions of 
 high posterior probabilities. It outputs the log (unnormalized) posterior 
 probability of a set of best (highest probability) models. 
-For more details, see Li et al. (2020).
+For more details, see Li et al. (2023, https://doi.org/10.1080/10618600.2022.2074428)
 }
 \details{
 SVEN is developed based on a hierarchical Gaussian linear model with priors placed 
@@ -111,34 +115,42 @@ for the \eqn{j}th variable as \deqn{\hat\pi_j = \sum_{k=1}^K w_k I(\gamma^{(k)}_
 Then, the WAM is defined as the model containing variables \eqn{j} with 
 \eqn{\hat\pi_j > \code{wam.threshold}}. SVEN also provides all the top \eqn{K} models which
 are stored in an \eqn{p \times K} sparse matrix, along with their corresponding log (unnormalized) 
-posterior probabilities.
+posterior probabilities. 
+
+When \code{X} is a list with two matrices, say, \code{W} and \code{Z}, the above method is extended 
+to \code{ncol(W)+ncol(Z)} dimensional regression. However, the hyperparameters \code{lam} and \code{w}
+are chosen separately for the two matrices, the default values being  \code{nrow(W)/ncol(W)^2}
+and \code{nrow(Z)/ncol(Z)^2} for \code{lam} and \code{sqrt(nrow(W))/ncol(W)} and
+ \code{sqrt(nrow(Z))/ncol(Z)} for \code{w}.
+ 
+ The marginal inclusion probabities can be extracted by using the function \code{mip}.
 }
 \examples{
-n=50; p=100; nonzero = 3
+\donttest{
+n <- 50; p <- 100; nonzero <- 3
 trueidx <- 1:3
-nonzero.value <- 5
-TrueBeta <- numeric(p)
-TrueBeta[trueidx] <- nonzero.value
-
-rho <- 0.6
-x1 <- matrix(rnorm(n*p), n, p)
-X <- sqrt(1-rho)*x1 + sqrt(rho)*rnorm(n)
-y <- 0.5 + X \%*\% TrueBeta + rnorm(n)
+truebeta <- c(4,5,6)
+X <- matrix(rnorm(n*p), n, p) # n x p covariate matrix
+y <- 0.5 + X[,trueidx] \%*\% truebeta + rnorm(n)
 res <- sven(X=X, y=y)
 res$model.map # the MAP model
-res$model.wam # the WAM
-res$mip.map # the marginal inclusion probabilities of the variables in the MAP model
-res$mip.wam # the marginal inclusion probabilities of the variables in the WAM
-res$pprob.top # the log (unnormalized) posterior probabilities corresponding to the top models.
 
-res$beta.map # the ridge estimator of regression coefficients in the MAP model 
-res$beta.wam # the ridge estimator of regression coefficients in the WAM
+
+Z <- matrix(rnorm(n*p), n, p) # another covariate matrix
+y2 = 0.5 + X[,trueidx] \%*\% truebeta  + Z[,1:2] \%*\% c(-2,-2) + rnorm(n)
+res2 <- sven(X=list(X,Z), y=y2)
+}
+
 }
 \references{
-Li, D., Dutta, S., Roy, V.(2020) Model Based Screening Embedded Bayesian 
-Variable Selection for Ultra-high Dimensional Settings http://arxiv.org/abs/2006.07561
+Li, D., Dutta, S., and Roy, V. (2023). Model based screening embedded Bayesian variable 
+selection for ultra-high dimensional settings. Journal of Computational and Graphical Statistics, 
+32(1), 61-73.
+}
+\seealso{
+[mip.sven()] for marginal inclusion probabilities, [predict.sven()](via [predict()]) for prediction for .
 }
 \author{
-Dongjin Li and Somak Dutta\cr Maintainer:
-Dongjin Li <dongjl@iastate.edu>
+Dongjin Li, Debarshi Chakraborty, and Somak Dutta\cr Maintainer:
+Dongjin Li <liyangxiaobei@gmail.com>
 }

@@ -8,17 +8,21 @@
 #' algorithm to explore gigantic model spaces and rapidly identify the regions of 
 #' high posterior probabilities. It outputs the log (unnormalized) posterior 
 #' probability of a set of best (highest probability) models. 
-#' For more details, see Li et al. (2020).
+#' For more details, see Li et al. (2023, https://doi.org/10.1080/10618600.2022.2074428)
 #' 
-#' @param X The \eqn{n\times p} covariate matrix without intercept. The following classes are supported:
-#' \code{matrix} and \code{dgCMatrix}. Every care is taken not to make copies of this (typically)
-#' giant matrix. No need to center or scale this matrix manually. Scaling is performed implicitly and 
-#' regression coefficient are returned on the original scale.
+#' @param X The \eqn{n\times p} covariate matrix or list of two matrices without intercept. 
+#' The following classes are supported: \code{matrix} and \code{dgCMatrix}. Every care is taken not to make copies of these (typically)
+#' giant matrices. No need to center or scale these matrices manually. Scaling is performed implicitly and 
+#' regression coefficient are returned on the original scale. Typically, in a combined GWAS-TWAS type 
+#' analysis, \code{X[[1]]} should be a sparse matrix and \code{X[[2]]} should be a dense matrix.
 #' @param y The response vector of length \eqn{n}. No need to center or scale.
-#' @param w The prior inclusion probability of each variable. Default: \eqn{sqrt(n)/p}.
-#' @param lam The slab precision parameter. Default: \eqn{n/p^2}
-#' as suggested by the theory of Li et al. (2020).
-#' @param Ntemp The number of temperatures. Default: 3.
+#' @param w The prior inclusion probability of each variable. Default: NULL, whence it is set as
+#' \eqn{\sqrt{n}/p} if \eqn{X} is a matrix. Or \eqn{(\sqrt{n}/p_1,\sqrt{n}/p_2)} if $X$ is a list of 
+#' two matrices with \eqn{p_1} and \eqn{p_2} columns.
+#' @param lam The slab precision parameter. Default: NULL, whence it is set as \eqn{n/p^2} for 
+#' as suggested by the theory of Li et al. (2023). Similarly, it's a vector of length two with values
+#' \eqn{\sqrt{n}/P_1^2} and \eqn{\sqrt{n}/p_2^2} when \code{X} is a list.
+#' @param Ntemp The number of temperatures. Default: 10.
 #' @param Tmax The maximum temperature. Default: \eqn{\log\log p+\log p}.
 #' @param Miter The number of iterations per temperature. Default: \code{50}.
 #' @param wam.threshold The threshold probability to select the covariates for WAM.
@@ -26,7 +30,7 @@
 #' probability is greater than the threshold. Default: 0.5.
 #' @param log.eps The tolerance to choose the number of top models. See detail. Default: -16.
 #' @param L The minimum number of neighboring models screened. Default: 20.
-#' @param verbose If \code{TRUE}, the function prints the current temperature SVEN is at; the default is TRUE. 
+#' @param verbose If \code{FALSE}, the function prints the current temperature SVEN is at; the default is TRUE. 
 #'
 #' @details
 #' SVEN is developed based on a hierarchical Gaussian linear model with priors placed 
@@ -66,6 +70,13 @@
 #' are stored in an \eqn{p \times K} sparse matrix, along with their corresponding log (unnormalized) 
 #' posterior probabilities. 
 #' 
+#' When \code{X} is a list with two matrices, say, \code{W} and \code{Z}, the above method is extended 
+#' to \code{ncol(W)+ncol(Z)} dimensional regression. However, the hyperparameters \code{lam} and \code{w}
+#' are chosen separately for the two matrices, the default values being  \code{nrow(W)/ncol(W)^2}
+#' and \code{nrow(Z)/ncol(Z)^2} for \code{lam} and \code{sqrt(nrow(W))/ncol(W)} and
+#'  \code{sqrt(nrow(Z))/ncol(Z)} for \code{w}.
+#'  
+#'  The marginal inclusion probabities can be extracted by using the function \code{mip}.
 #' 
 #' @return A list with components
 #' \item{model.map}{A vector of indices corresponding to the selected variables
@@ -83,139 +94,89 @@
 #' corresponding to the top models.}
 #' \item{stats}{Additional statistics.}
 #'
-#' @author Dongjin Li and Somak Dutta\cr Maintainer:
-#' Dongjin Li <dongjl@@iastate.edu>
-#' @references Li, D., Dutta, S., Roy, V.(2020) Model Based Screening Embedded Bayesian 
-#' Variable Selection for Ultra-high Dimensional Settings http://arxiv.org/abs/2006.07561
-#' @examples
-#' n=50; p=100; nonzero = 3
-#' trueidx <- 1:3
-#' nonzero.value <- 5
-#' TrueBeta <- numeric(p)
-#' TrueBeta[trueidx] <- nonzero.value
+#' @author Dongjin Li, Debarshi Chakraborty, and Somak Dutta\cr Maintainer:
+#' Dongjin Li <liyangxiaobei@@gmail.com>
 #' 
-#' rho <- 0.6
-#' x1 <- matrix(rnorm(n*p), n, p)
-#' X <- sqrt(1-rho)*x1 + sqrt(rho)*rnorm(n)
-#' y <- 0.5 + X %*% TrueBeta + rnorm(n)
+#' @seealso [mip.sven()] for marginal inclusion probabilities, [predict.sven()](via [predict()]) for prediction for .
+#' 
+#' 
+#' @references Li, D., Dutta, S., and Roy, V. (2023). Model based screening embedded Bayesian variable 
+#' selection for ultra-high dimensional settings. Journal of Computational and Graphical Statistics, 
+#' 32(1), 61-73.
+#' @examples
+#' \donttest{
+#' n <- 50; p <- 100; nonzero <- 3
+#' trueidx <- 1:3
+#' truebeta <- c(4,5,6)
+#' X <- matrix(rnorm(n*p), n, p) # n x p covariate matrix
+#' y <- 0.5 + X[,trueidx] %*% truebeta + rnorm(n)
 #' res <- sven(X=X, y=y)
 #' res$model.map # the MAP model
-#' res$model.wam # the WAM
-#' res$mip.map # the marginal inclusion probabilities of the variables in the MAP model
-#' res$mip.wam # the marginal inclusion probabilities of the variables in the WAM
-#' res$pprob.top # the log (unnormalized) posterior probabilities corresponding to the top models.
 #' 
-#' res$beta.map # the ridge estimator of regression coefficients in the MAP model 
-#' res$beta.wam # the ridge estimator of regression coefficients in the WAM
+#' 
+#' Z <- matrix(rnorm(n*p), n, p) # another covariate matrix
+#' y2 = 0.5 + X[,trueidx] %*% truebeta  + Z[,1:2] %*% c(-2,-2) + rnorm(n)
+#' res2 <- sven(X=list(X,Z), y=y2)
+#' }
+#' 
 #' @export
-sven <- function(X, y, w = sqrt(nrow(X))/ncol(X), lam = nrow(X)/ncol(X)^2, Ntemp = 3,
-                 Tmax = (log(log(ncol(X)))+log(ncol(X))), Miter = 50, wam.threshold = 0.5, 
-                 log.eps = -16, L = 20, verbose = TRUE) {
-  result <- list()
-
-  n <- length(y)
-  ncovar <- ncol(X)
-  ys = scale(y)
-  xbar = colMeans(X)
-
-  stopifnot(class(X)[1] %in% c("dgCMatrix","matrix"))
-  if(class(X)[1] == "dgCMatrix") {
-    D = 1/sqrt(colMSD_dgc(X,xbar))
-  }  else   {
-    D = apply(X,2,sd)
-    D = 1/D
-  }
-  Xty = D*as.numeric(crossprod(X,ys))
-
-  logp <- numeric(Miter * (Ntemp))
-  RSS <- numeric(Miter * (Ntemp))
-  size <- integer(Miter * (Ntemp))
-  indices <- integer(Miter*100)
-
-  if (verbose) cat("temperature = 1\n")
-  o <- sven.notemp(X, ys, Xty, lam, w, L, D, xbar, n, ncovar, Miter)
-  logp.best <- o$bestlogp
-  r.idx.best <- o$bestidx
-  logp[1:Miter] <- o$currlogp
-  RSS[1:Miter] <- o$currRSS
-  size[1:Miter] <- o$modelsizes
-  ed <- sum(size)
-  indices[1:ed] <- o$curridx
-
-  stepsize <- Tmax/(Ntemp-1)
-  for (t in 1:(Ntemp-1)) {
-    if (verbose) cat("temperature =", t*stepsize, "\n")
-    o <- sven.temp(X, ys, Xty, lam, w, L, D, xbar, t, stepsize=stepsize, logp.best, r.idx.best, n, ncovar, Miter)
-    logp.best <- o$bestlogp
-    r.idx.best <- o$bestidx
-    logp[(Miter*t+1):(Miter*(t+1))] <- o$currlogp
-    RSS[(Miter*t+1):(Miter*(t+1))] <- o$currRSS
-    size[(Miter*t+1):(Miter*(t+1))] <- o$modelsizes
-    indices[(ed+1):(ed+sum(o$modelsizes))] <- o$curridx
-    ed <- ed + sum(o$modelsizes)
-  }
-  indices <- indices[indices>0]
-  cumsize <- cumsum(size)
-  modelSparse <- sparseMatrix(i=indices,p = c(0,cumsize),index1 = T,dims = c(ncovar,length(logp)), x = T)
-
-  logp.uniq1 <- unique(logp)
-  for (i in 1:(length(logp.uniq1)-1)) {
-    for (j in 2:length(logp.uniq1)) {
-      if (abs(logp.uniq1[i]-logp.uniq1[j]) < 1e-10) {
-        logp.uniq1[j] <- logp.uniq1[i]
+sven <- function(X, y, w = NULL, lam = NULL, Ntemp = 10,
+                 Tmax = NULL, Miter = 50, wam.threshold = 0.5, 
+                 log.eps = -16, L = 20, verbose = FALSE) {
+  if(is.list(X))
+  {
+    if(length(X) != 2)
+      stop("Input X must be a matrix or a list of two matrices")
+      X1 = X[[1]]
+      X2 = X[[2]]
+      stopifnot(class(X1)[1] %in% c("dgCMatrix","matrix"))
+      stopifnot(class(X2)[1] %in% c("dgCMatrix","matrix"))
+      
+      if(is.null(w))
+      {
+        w1 = sqrt(nrow(X1))/ncol(X1)
+        w2 = sqrt(nrow(X2))/ncol(X2)
+      } else {
+        w1 = w[1]
+        w2 = w[2]
+        stopifnot(is.numeric(w) && length(w) == 2 && all(w > 0) && all(w < 1))
       }
-    }
+      if(is.null(lam)){
+        lam1 = nrow(X1)/ncol(X1)^2
+        lam2 = nrow(X2)/ncol(X2)^2
+      } else {
+        lam1 = lam[1]
+        lam2 = lam[2]
+        stopifnot(is.numeric(lam) && length(lam) == 2 && all(lam > 0))
+      }
+      Tmax = log(log(ncol(X1)+ncol(X2))) + log(ncol(X1) + ncol(X2))
+      result = sven.xz(x1 = X1,x2 = X2,y = y,w1 = w1,w2 = w2,lam1 = lam1,lam2 = lam2,
+                        Ntemp = Ntemp, Tmax = Tmax, Miter = Miter, wam.threshold = wam.threshold,
+                        log.eps = log.eps, L = L, verbose = verbose)
+  } else   {
+    stopifnot(class(X)[1] %in% c("dgCMatrix","matrix"))
+    if(is.null(w)) 
+      w = sqrt(nrow(X))/ncol(X)
+    
+    stopifnot(is.numeric(w) && {w > 0} && {w < 1})
+    if(is.null(lam))
+      lam = nrow(X)/ncol(X)^2
+    stopifnot(is.numeric(lam) && {lam > 0})
+    Tmax = log(log(ncol(X))) + log(ncol(X))
+    
+    result = sven.x(X,y,w = w, lam = lam, Ntemp = Ntemp, Tmax = Tmax, Miter = Miter,
+                    wam.threshold = wam.threshold,
+                    log.eps = log.eps, L = L, verbose = verbose)
   }
-  logp.uniq <- unique(logp.uniq1)
-  logp.top <- sort(logp.uniq[(logp.best-logp.uniq)<(-log.eps)], decreasing = T)
-  cols.top <- unlist(lapply(logp.top, FUN=function(x){which(x==logp)[1]}))
-  size.top <- size[cols.top]
-  RSS.top <- RSS[cols.top]
-  model.top <- modelSparse[, cols.top, drop=F]
-
-  logp.top1 <- logp.top-logp.best
-  weight <- exp(logp.top1)/sum(exp(logp.top1))
-
-  beta.est <- matrix(0, (ncovar+1), length(cols.top))
-  for(i in 1:length(cols.top)){
-   if (size.top[i]==0){
-     beta <- mean(y)
-     beta.est[1, i] <- beta
-   } else {
-     m_i = model.top[, i]
-     x.est <- cbind(rep(1, n), scale(X[, m_i], center = xbar[m_i], scale = 1/D[m_i]))
-     beta <- solve(crossprod(x.est) + lam*diag(c(0, rep(1, size.top[i]))), crossprod(x.est, y))
-     beta.est[c(T, m_i), i] <- c(beta[1]-sum(beta[-1]*xbar[m_i]*D[m_i]), beta[-1] * D[m_i])
-   }
+  
+  result$stats$islist = is.list(X)
+  if(is.list(X))
+  {
+    result$stats$colnamesX = colnames(X[[1]])
+    result$stats$colnamesZ = colnames(X[[2]])
+  } else   {
+    result$stats$colnamesX = colnames(X)
   }
-
-  beta.MAP <- beta.est[, 1]
-  beta.WAM <- rowSums(beta.est%*%diag(weight, nrow=length(size.top)))
-
-  MIP = rowSums(model.top%*%Diagonal(length(weight), weight))
-  model.WAM <- sort(which(MIP >= wam.threshold))
-  model.MAP <- sort(r.idx.best)
-  MIP.MAP <- MIP[model.MAP]
-  MIP.WAM <- MIP[model.WAM]
-
-  mtop.idx <- apply(model.top, 2, which)
-  model.union <- Reduce(union, mtop.idx)
-  Xm <- sparseMatrix(i = integer(0), j = integer(0), dims = c(n, ncovar))
-  Xm <- as(Xm, "dMatrix")
-  Xm[, model.union] <- X[, model.union, drop=F]
-
-  result$model.map <- model.MAP
-  result$model.wam <- model.WAM
-  result$model.top <- model.top
-  result$beta.map <- beta.MAP
-  result$beta.wam <- beta.WAM
-  result$mip.map <- MIP.MAP
-  result$mip.wam <- MIP.WAM
-  result$pprob.map <- logp.best
-  result$pprob.top <- logp.top
-  result$stats <- list(RSS.top = RSS.top, weights = weight, Xm = Xm, y = y, lam = lam)
-
-  class(result) <- c(class(result), "sven")
   return(result)
 }
 
