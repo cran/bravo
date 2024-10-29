@@ -1,4 +1,4 @@
-d672111770d4492d87a6b9d4c1b4c270 *DESCRIPTION
+4ec498b58832c70f1afeda48ffa5ea5c *DESCRIPTION
 944ea54b5fa7758796abcf1fb1c69cef *NAMESPACE
 3c1e73275c1de7fb62051f0b349e6be2 *R/RcppExports.R
 c4abbd5baea418f3887788f2121ee511 *R/addpara.R
@@ -19,8 +19,8 @@ b742c9de6466dabebfbac7aa7b9f93ec *R/sven.notemp.R
 f43a9edf1c8706c16d054bfa02ea5988 *R/xzaddvar.R
 de4a1ba405899b1f5713d40dd9872fab *R/xzdelvar.R
 b5a1f2e4af72d70eb6bee5a4dc0ba2af *R/xzsven.R
-2a56ed786523a39a3f9a9026148ee44e *R/xzsven_notemp.R
-7f773eafa4445fb8b25dce751df2cc91 *R/xzsven_temp.R
+c3fa79907b1328324834a71c32dad7d2 *R/xzsven_notemp.R
+7e0f4236f60210a1783ea5f091897ace *R/xzsven_temp.R
 67537cc2b2eb1279bec32386a20e99bc *R/xzswapvar.R
 d585338891c5920d964e6f7b9d02217b *README.md
 832df1f4cce54b0ba92d6f697dc7071a *man/bits.Rd
