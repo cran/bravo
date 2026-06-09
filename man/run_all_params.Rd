@@ -20,3 +20,4 @@ run_all_params(k, x, R2 = 0.5, nspike = 20, betamax)
 \description{
 Simulates a phenotype and evaluates all parameter combinations via Jaccard index.
 }
+\keyword{internal}

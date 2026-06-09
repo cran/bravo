@@ -20,3 +20,4 @@ bwas(x, y, params, bigx, ehits = 20)
 \description{
 Runs SVEN and UNITE for one trait.
 }
+\keyword{internal}

@@ -18,3 +18,4 @@ FDR_WS(model, truth, mapmat, winsize = 1000)
 \description{
 Computes False Discovery Rate using base-pair window as proximity measure.
 }
+\keyword{internal}

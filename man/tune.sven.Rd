@@ -20,3 +20,4 @@ tune.sven(x, R2 = 0.5, ehits = 20, betamax = 1, n.cores)
 \description{
 Runs 100 parallel simulations and returns the optimal (lambda, w) pair.
 }
+\keyword{internal}

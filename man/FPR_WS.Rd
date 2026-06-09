@@ -18,3 +18,4 @@ FPR_WS(model, truth, mapmat, winsize = 1000)
 \description{
 Computes False Positive Rate using base-pair window as proximity measure.
 }
+\keyword{internal}

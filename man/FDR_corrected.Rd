@@ -18,3 +18,4 @@ FDR_corrected(model, truth, x, threshold = 0.9)
 \description{
 Computes False Discovery Rate using SNP correlation as proximity measure.
 }
+\keyword{internal}

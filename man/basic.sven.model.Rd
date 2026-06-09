@@ -18,3 +18,4 @@ basic.sven.model(x, y, params, seed = 2441139)
 \description{
 Fits SVEN on (x, y) using the supplied tuned parameters.
 }
+\keyword{internal}

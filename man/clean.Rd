@@ -14,3 +14,4 @@ clean(SNPmat, MAF_threshold = 0.05)
 \description{
 Removes duplicate SNPs and filters low MAF variants.
 }
+\keyword{internal}

@@ -18,3 +18,4 @@ TPR_corrected(model, truth, x, threshold = 0.9)
 \description{
 Computes True Positive Rate using SNP correlation as proximity measure.
 }
+\keyword{internal}

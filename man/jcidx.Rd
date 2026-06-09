@@ -14,3 +14,4 @@ jcidx(vars, truth)
 \description{
 Computes Jaccard index between selected and true causal SNPs.
 }
+\keyword{internal}

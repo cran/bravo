@@ -18,3 +18,4 @@ tune.sven.all(x, R2 = 0.5, betamax = 1, n.cores)
 \description{
 Tunes SVEN parameters for small, medium, and large expected hit sizes.
 }
+\keyword{internal}

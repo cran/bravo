@@ -12,3 +12,4 @@ create_param_mat(x)
 \description{
 Builds a grid of lambda and w tuning parameters for SVEN.
 }
+\keyword{internal}

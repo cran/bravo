@@ -22,3 +22,4 @@ unite.sven(x, bigx, basic_sven_object, y, ehits, threshold = 0)
 \description{
 Propagates MIPs from SVEN hits to the full SNP matrix via LD.
 }
+\keyword{internal}

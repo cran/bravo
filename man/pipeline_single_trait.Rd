@@ -16,3 +16,4 @@ pipeline_single_trait(svenetics_trained_object, i, hitsize = NULL)
 \description{
 Runs the full GWAS pipeline for the i-th trait column.
 }
+\keyword{internal}
